@@ -17,18 +17,18 @@ class TeleopNode(Node):
         timer_period = 0.1
         self.timer = self.create_timer(timer_period, self.run_loop)
         self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
-        self.key_mapping = {'q' : (1.0,0.0,0.0,0.0,0.0,-1.0), 
+        self.key_mapping = {'q' : (1.0,0.0,0.0,0.0,0.0,1.0), 
                             'w' : (1.0,0.0,0.0,0.0,0.0,0.0), 
-                            'e' : (1.0,0.0,0.0,0.0,0.0,1.0), 
-                            'a' : (0.0,0.0,0.0,0.0,0.0,-1.0), 
+                            'e' : (1.0,0.0,0.0,0.0,0.0,-1.0), 
+                            'a' : (0.0,0.0,0.0,0.0,0.0,1.0), 
                             's' : (0.0,0.0,0.0,0.0,0.0,0.0), 
-                            'd' : (0.0,0.0,0.0,0.0,0.0,1.0), 
-                            'z' : (-1.0,0.0,0.0,0.0,0.0,1.0), 
+                            'd' : (0.0,0.0,0.0,0.0,0.0,-1.0), 
+                            'z' : (-1.0,0.0,0.0,0.0,0.0,-1.0), 
                             'x' : (-1.0,0.0,0.0,0.0,0.0,0.0), 
-                            'c' : (-1.0,0.0,0.0,0.0,0.0,-1.0) 
+                            'c' : (-1.0,0.0,0.0,0.0,0.0,1.0) 
                             }
         self.vel_coeff = 0.1
-        # self.prev_key = 
+        #self.prev_key = self.key
 
     def getKey(self):
         tty.setraw(sys.stdin.fileno())
@@ -52,8 +52,8 @@ class TeleopNode(Node):
             rclpy.shutdown()
 
         # else:
-        if self.key not in self.key_mapping:
-            self.key = 's'
+        #if self.key not in self.key_mapping or self.key == self.prev_key:
+        #    self.key = 's'
         speeds = self.key_mapping[self.key]
         msg.linear.x = speeds[0] * self.vel_coeff 
         msg.linear.y = speeds[1] * self.vel_coeff 
@@ -62,12 +62,6 @@ class TeleopNode(Node):
         msg.angular.y = speeds[4] * self.vel_coeff 
         msg.angular.z = speeds[5] * self.vel_coeff 
         
-        # msg.linear.x = 0.1
-        # msg.linear.y = 0.0
-        # msg.linear.z = 0.0
-        # msg.angular.x = 0.0
-        # msg.angular.y = 0.0
-        # msg.angular.z = 0.0
         self.publisher.publish(msg)
 
 # settings = termios.tcgetattr(sys.stdin)
