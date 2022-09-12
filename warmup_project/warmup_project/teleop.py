@@ -27,7 +27,7 @@ class TeleopNode(Node):
                             'x' : (-1.0,0.0,0.0,0.0,0.0,0.0), 
                             'c' : (-1.0,0.0,0.0,0.0,0.0,1.0) 
                             }
-        self.vel_coeff = 0.1
+        self.vel_coeff = 0.5
         #self.prev_key = self.key
 
     def getKey(self):
