@@ -37,3 +37,4 @@ ros2 run [package name] [node name]
 
 Rviz: rviz2
 
+Rqt: rqt, plugins -> visualizations -> plot -> /scan/ranges[0] for example
