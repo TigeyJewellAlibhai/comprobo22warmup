@@ -33,8 +33,8 @@ class SendMessageNode(Node):
         msg.scale.y = 0.1
         msg.scale.z = 0.1
         msg.pose.position.x = 1.0
-        msg.pose.position.y = 1.0
-        msg.pose.position.z = 1.0
+        msg.pose.position.y = 2.0
+        msg.pose.position.z = 0.0
         msg.pose.orientation.w = 1.0
 
 
