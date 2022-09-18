@@ -28,50 +28,79 @@ class PersonFollowerNode(Node):
     
     def cluster2(self, data):
         clusters = []
+        angles_translate = [i for i in range(0,181)] + [i for i in range(-179,0,1)]
+        ranges_mapped = {}
+        for i in range(0,360):
+            ranges_mapped[angles_translate[i]] = data[i]
+        # print("ranges_mapped", ranges_mapped)
+
+
+
+        # in_cluster = False
+        # for i,point in enumerate(data):
+            # if point not in [0, float('inf')]:
+            # if not in_cluster or (i > 0 and abs(data[i-1] - point) > 0.3):
+            #         clusters.append([[data.index(point), point]])
+            #     # elif i == 360:
+            #     #     for item in clusters[-1]:
+            #     #         clusters[0].append(item)
+            #     #     clusters.pop(-1)
+            #     else:
+            #         clusters[-1].append([data.index(point), point])
+            #     in_cluster = True
+            # elif i > 1:
+            #     if data[i-1] not in [0, float('inf')]:
+            #         in_cluster = True
+            # else:
+            #     in_cluster = False
+
+
         in_cluster = False
-        for i,point in enumerate(data):
-            if point not in [0, float('inf')]:
-                if not in_cluster or (i > 0 and abs(data[i-1] - point) > 0.3):
-                    clusters.append([[data.index(point), point]])
-                elif i == 360:
-                    for item in clusters[-1]:
-                        clusters[0].append(item)
-                    clusters.pop(-1)
-                else:
-                    clusters[-1].append([data.index(point), point])
+        for ang in sorted(ranges_mapped.keys()):
+            if ranges_mapped[ang] not in [0, float('inf')]: # if is valid range value
+
+                # too far from current cluster, create new cluser
+                if not in_cluster or (ang > -179 and abs(ranges_mapped[ang-1]- ranges_mapped[ang]) > 0.3): 
+                    clusters.append([[ang, ranges_mapped[ang]]])
+                else: # if close enough to current cluster, add to cluster
+                    clusters[-1].append([ang, ranges_mapped[ang]])
                 in_cluster = True
-            elif i > 1:
-                if data[i-1] not in [0, float('inf')]:
+
+            elif ang > -179: # stay in cluster even if there's one outlier
+                if ranges_mapped[ang-1] not in [0, float('inf')]:
                     in_cluster = True
-            else:
+
+            else: # not valid range
                 in_cluster = False
         
         avgs = []
         for cluster in clusters:
-            if len(cluster) > 3 and len(cluster) < 90:
+            if len(cluster) > 5 and len(cluster) < 90:
                 avgs.append([np.mean(x) for x in zip(*cluster)])
         return clusters, avgs
 
     def pol2cart(self, rho, phi):
-        x = rho * np.cos(phi)
-        y = rho * np.sin(phi)
-        return(x, y)
+        x = rho * np.cos(math.radians(phi))
+        y = rho * np.sin(math.radians(phi))
+        return (x, y)
                 
     def get_scan(self, scan_msg):
         data = scan_msg.ranges
         clusters, avgs = self.cluster2(data)
-        min = 100
+        min_range = 100
         angle = 0
         for avg in avgs:
-            if avg[1] < min:
-                min = avg[1]
+            if avg[1] < min_range:
+                min_range = avg[1]
                 angle = avg[0]
-        self.cluster_pos = self.pol2cart(angle, min)
-        self.angle = angle - 360 if angle > 180 else angle
-        if self.angle == 0:
-            self.angle = 1
-        self.range = min
-        print(self.angle, self.range)
+
+        # self.angle = angle - 360 if angle > 180 else angle
+        # if self.angle == 0:
+        #     self.angle = 1
+        self.range = min_range
+        self.angle = angle
+        self.cluster_pos = self.pol2cart(min_range, angle)
+        print("min_range, angle, cluster_pos", min_range, angle, self.cluster_pos)
 
     def run_loop(self):
 
@@ -97,8 +126,13 @@ class PersonFollowerNode(Node):
         self.publisher.publish(msg)
 
         msg = Twist()
-        msg.linear.x = (3.0*(self.range-0.4))/(abs(self.angle)**0.5)
-        msg.angular.z = (0.01*self.angle)
+
+        if self.angle != 0.0:   
+            msg.linear.x = (1.5 * (self.range - 0.5)/abs(self.range - 0.5) * (self.range-0.5)**2)/(abs(self.angle)**0.5)
+        else:
+            msg.linear.x = (1.5 * (self.range - 0.5)/abs(self.range - 0.5) * (self.range-0.5)**2)
+
+        msg.angular.z = (0.015*self.angle)
 
         self.vel_pub.publish(msg)
 
