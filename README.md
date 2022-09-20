@@ -25,4 +25,12 @@ The clustering algorithm iterates from -180 to 180 degrees, looking at the diffe
 
 To drive, the angular velocity component uses a linear multiplier on the difference between the heading of the "person" and the heading of the neato currently. For linear speed, again we mutliply the distance between the person and the neato, but also divide by the square root of the difference in heading to ensure the neato doesn't zoom off in the wrong direction. We started by simulating in gazebo, then made changes to the code and calibrated coefficients while running on a real neato. There was a lot more data noise in the real world. The neato could see a whiteboard more clearly than our feet. It successfully follows us accross the room even through tables and chairs, but would get stuck at walls. 
 
-In the future there would be potential to use much smarter algorithms for clustering or making sense of the points for person or object recognition, and we could try filtering on only moving points.
+In the future there would be potential to use much smarter algorithms for clustering/making sense of the points it sees, and we could try filtering on only moving points or keeping track of where the "person" previously was in the odom frame.
+
+## Object Avoidance
+
+The goal of this behaviour was to move forward while reactively avoiding obstacles in its path. 
+
+The approach we took was to have the neato find clusters just like in the person follower, reporting the average angle and range of each cluster. The neato then finds the closest cluster by finding the cluster with the minimum average range within an average angle range of -50 to 50. This closest cluster is what the neato plans to avoid. If the closest obstacle is more than a meter away, the neato decides to drive at a constant speed toward the heading of 0 degrees in the odometry frame, so it remembers which way is "forward". If the cluster average range is within 1 meter, the neato makes corrective action to turn away from the object, turning more or less based on the angle of the cluster in relation to the neato.
+
+We tested this code mainly in gazebo and it successfully weaves through 4 obstacles of cylinders and cubes. Some possible failure modes of this algorithm include too closely spaced objects, and scenarios when the neato must recognize and avoid more than one object at a time. 
