@@ -9,6 +9,8 @@ To do this, we developed 3 modes, which could be switched by changing a variable
 
 The most difficult part of this behaviour was tuning the turn angle to 90 degrees, since this was hard coded into the angular velocity variable. Any slight difference from 90 degrees would compound over the 4 turns, making it more obvious. We ended up getting very close to 90.
 
+In the future we could use odometry information to improve the accuracy of driving in a square, instead of using timers. 
+
 ## Wall Follow Behaviour
 
 The goal of this behaviour was to get the robot to 'follow' a wall by detecting it and driving parallel to it. This can best be done using the LIDAR sensor.
@@ -36,3 +38,5 @@ The goal of this behaviour was to move forward while reactively avoiding obstacl
 The approach we took was to have the neato find clusters just like in the person follower, reporting the average angle and range of each cluster. The neato then finds the closest cluster by finding the cluster with the minimum average range within an average angle range of -50 to 50. This closest cluster is what the neato plans to avoid. If the closest obstacle is more than a meter away, the neato decides to drive at a constant speed toward the heading of 0 degrees in the odometry frame, so it remembers which way is "forward". If the cluster average range is within 1 meter, the neato makes corrective action to turn away from the object, turning more or less based on the angle of the cluster in relation to the neato.
 
 We tested this code mainly in gazebo and it successfully weaves through 4 obstacles of cylinders and cubes. Some possible failure modes of this algorithm include too closely spaced objects, and scenarios when the neato must recognize and avoid more than one object at a time. 
+
+A more advanced approach would be to use potential fields rather than focusing on single obstacles, which would help correct some of our current failure modes.
