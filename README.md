@@ -25,7 +25,7 @@ The clustering algorithm iterates from -180 to 180 degrees, looking at the diffe
 
 To drive, the angular velocity component uses a linear multiplier on the difference between the heading of the "person" and the heading of the neato currently. For linear speed, again we mutliply the distance between the person and the neato, but also divide by the square root of the difference in heading to ensure the neato doesn't zoom off in the wrong direction. We started by simulating in gazebo, then made changes to the code and calibrated coefficients while running on a real neato. There was a lot more data noise in the real world. The neato could see a whiteboard more clearly than our feet. It successfully follows us accross the room even through tables and chairs, but would get stuck at walls. 
 
-In the future there would be potential to use much smarter algorithms for clustering/making sense of the points it sees, and we could try filtering on only moving points or keeping track of where the "person" previously was in the odom frame.
+In the future there would be potential to use smarter algorithms for clustering/making sense of points it sees, and we could try filtering on only moving points or keeping track of where the "person" previously was in the odom frame.
 
 ## Object Avoidance
 
