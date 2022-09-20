@@ -128,7 +128,7 @@ class ObstacleAvoiderNode(Node):
         self.range = min_range
         self.angle = angle
         self.cluster_pos = self.pol2cart(min_range, angle)
-        print("min_range, angle, cluster_pos", min_range, angle, self.cluster_pos)
+        #print("min_range, angle, cluster_pos", min_range, angle, self.cluster_pos)
 
     def get_odom(self, odom_msg):
         odom_pos = odom_msg.pose.pose.position
@@ -139,12 +139,12 @@ class ObstacleAvoiderNode(Node):
         msg = Twist()
         # If no obstacle in range, revert to odometry heading
         if self.range > 1:
-            msg.angular.z = (0.1*(self.current_angle**2))
+            msg.angular.z = ((-self.current_angle/abs(self.current_angle))*0.8*(self.current_angle**2))
         # Else avoid the obstacle
         else:
-            msg.angular.z = (0.03*-self.angle)
+            msg.angular.z = (10/-self.angle)
         msg.linear.x = 0.3
-        
+        print(self.current_angle)
 
         self.vel_pub.publish(msg)
 
