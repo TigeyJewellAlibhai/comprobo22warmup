@@ -15,7 +15,9 @@ The goal of this behaviour was to get the robot to 'follow' a wall by detecting 
 
 We thought of several possible ways to do this, but we settled for one of the easier options involving detecting a wall on the right side of the robot. The robot would then scan angles 10 degrees behind and in front of its right side (270 degrees). If the 10 degrees in front were on average closer, it was oriented more towards the wall, and would steer left (away from the wall). If the 10 degrees behind the robot were on average closer, the robot was pointed away from the wall, and would steer right (towards the wall). The steering was proportional to the difference between the distance to the wall behind and in front. This worked surprisingly well on straight walls for such a simple algorithm.
 
-We used a real neato (instead of gazebo) for testing this node, and the room where we initially tested it had black baseboards. The lidar could not detect the walls (presumably from the high light absorption of the black walls) so we had to test out in the hallway with lighter color walls.
+We used a real neato (instead of gazebo) for testing this node, and the room where we initially tested it had black baseboards. The lidar could not detect the walls (presumably from the high light absorption of the black walls) so we had to test out in the hallway with lighter color walls. The neato follows the wall at whatever distance away that it originally becomes parallel to the wall.
+
+There are many possible extensions such as using ransac to pick out line segments of the wall, to be able to follow the wall at a particular distance, or to turn 90 degree corners successfully. 
 
 ## Person Follow Behaviour
 
@@ -25,7 +27,7 @@ The clustering algorithm iterates from -180 to 180 degrees, looking at the diffe
 
 To drive, the angular velocity component uses a linear multiplier on the difference between the heading of the "person" and the heading of the neato currently. For linear speed, again we mutliply the distance between the person and the neato, but also divide by the square root of the difference in heading to ensure the neato doesn't zoom off in the wrong direction. We started by simulating in gazebo, then made changes to the code and calibrated coefficients while running on a real neato. There was data noise in the real world to account for, and the neato could see a whiteboard more clearly than our feet. It successfully follows us accross the room  through tables and chairs, but would get stuck at walls. 
 
-In the future there would be potential to use smarter algorithms for clustering/making sense of points it sees, and we could try filtering on only moving points or keeping track of where the "person" previously was in the odom frame.
+In the future there would be potential to use smarter algorithms for making sense of points it sees, and we could try filtering on only moving points or keeping track of where the "person" previously was in the odom frame.
 
 ## Object Avoidance
 
