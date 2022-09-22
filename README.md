@@ -11,6 +11,10 @@ The most difficult part of this behaviour was tuning the turn angle to 90 degree
 
 In the future we could use odometry information to improve the accuracy of driving in a square, instead of using timers. 
 
+https://user-images.githubusercontent.com/29106192/191837378-69ef7d04-ae40-484f-b9b4-a8ddceded370.mp4
+
+
+
 ## Wall Follow Behaviour
 
 The goal of this behaviour was to get the robot to 'follow' a wall by detecting it and driving parallel to it. This can best be done using the LIDAR sensor.
@@ -47,5 +51,16 @@ We tested this code mainly in gazebo and it successfully weaves through 4 obstac
 A more advanced approach would be to use potential fields rather than focusing on single obstacles, which would help correct some of our current failure modes. Here is a video of our obstacle avoid working:
 
 https://user-images.githubusercontent.com/29106192/191826920-a50fa3b7-b4da-47bb-90eb-8f372418b024.mp4
+
+
+## Finite State Machine
+
+For our finite state machine, we needed to incorporate 2 or more behaviours into a single node that could then decide which behaviour to execute based on sensor input. We decided to combine the person follower and drive square behaviour. It was designed to drive in a square until it detected an object within 1.5m, and then follow that object (hopefully a person) until it moved out of range. 
+
+This was accomplished by having the node subscribe to the scan topic and determine if there was a cluster of points within 1.5m. The main loop would then run either the person following loop or the drive square loop until the state changed as dictated by the get_scan() method. This worked relatively well, except when the drive square behaviour drove the neato too close to a wall, which it then identified as a person. This could be improved by having some relative motion detection so the neato doesn't follow static objects.
+
+In the open, the code worked well. Here is a video: 
+
+https://user-images.githubusercontent.com/29106192/191837069-48e1fd44-fff1-4f88-bff7-38873a4d2979.mp4
 
 
