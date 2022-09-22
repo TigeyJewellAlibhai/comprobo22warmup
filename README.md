@@ -55,12 +55,17 @@ https://user-images.githubusercontent.com/29106192/191826920-a50fa3b7-b4da-47bb-
 
 ## Finite State Machine
 
-For our finite state machine, we needed to incorporate 2 or more behaviours into a single node that could then decide which behaviour to execute based on sensor input. We decided to combine the person follower and drive square behaviour. It was designed to drive in a square until it detected an object within 1.5m, and then follow that object (hopefully a person) until it moved out of range. 
+For our finite state machine, we needed to incorporate 2 or more behaviours into a single node that could then decide which behaviour to execute based on sensor input. We decided to combine the person follower and drive square behaviour. It was designed to drive in a square until it detected an object within 1.5m, and then follow that object (hopefully a person) until it moved out of range. Here is a diagram: ![FSM](https://user-images.githubusercontent.com/29106192/191839123-77131553-4c21-4681-bf26-a27408c78207.png)
+
 
 This was accomplished by having the node subscribe to the scan topic and determine if there was a cluster of points within 1.5m. The main loop would then run either the person following loop or the drive square loop until the state changed as dictated by the get_scan() method. This worked relatively well, except when the drive square behaviour drove the neato too close to a wall, which it then identified as a person. This could be improved by having some relative motion detection so the neato doesn't follow static objects.
 
-In the open, the code worked well. Here is a video: 
+In the open, the code worked well. Here is a video. 
 
 https://user-images.githubusercontent.com/29106192/191837069-48e1fd44-fff1-4f88-bff7-38873a4d2979.mp4
 
 
+## Key Takeaways
+
+1. Real life is very different from Gazebo. Even after some of our programs such as person follower worked well in Gazebo, they didn't work nearly as well in real life, and most took lots of tuning to get right. This is mostly because of the noisy LIDAR data we got, and the imperfect geometries of the objects we were tracking. In addition, very dark colors would not be picked up well by the LIDAR and this made it tough to follow people with dark pants, or dark walls. The only real solution to this is to test often on a real life robot, and be ready to implement data filtering and tune parameters differently.
+2. Visualization is a great way to debug. The vast amount of data coming from sensors and the fast tick rate of ROS make it hard to see what's going on from the terminal. Using Rviz helped us to understand why our person follower wasn't working, and allowed us to see what the robot thought was the direction of the cluster. This also helped us tune parameters.
