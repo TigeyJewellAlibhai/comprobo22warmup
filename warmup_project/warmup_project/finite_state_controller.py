@@ -12,7 +12,7 @@ import math
 class FiniteStateMachineNode(Node):
 
     def __init__(self):
-        super().__init__('FiniteStateMachine_node')
+        super().__init__('finite_state_machine_node')
         timer_period = 0.1
         self.velocity = 0.1
         self.data = 0
@@ -20,6 +20,14 @@ class FiniteStateMachineNode(Node):
         self.angle = 0.1
         self.range = 0.1
         self.cluster_pos = [0.0, 0.0]
+
+        self.loops_to_drive = 20
+        self.loop = 0
+        self.lin_vel = 0.3
+        self.ang_vel = 0.8
+        self.drive_mode = 0
+
+        self.behaviour_mode = 'drive_square'
 
         self.timer = self.create_timer(timer_period, self.run_loop)
         self.create_subscription(LaserScan, 'stable_scan', self.get_scan, 10)
@@ -33,27 +41,6 @@ class FiniteStateMachineNode(Node):
         for i in range(0,360):
             ranges_mapped[angles_translate[i]] = data[i]
         # print("ranges_mapped", ranges_mapped)
-
-
-
-        # in_cluster = False
-        # for i,point in enumerate(data):
-            # if point not in [0, float('inf')]:
-            # if not in_cluster or (i > 0 and abs(data[i-1] - point) > 0.3):
-            #         clusters.append([[data.index(point), point]])
-            #     # elif i == 360:
-            #     #     for item in clusters[-1]:
-            #     #         clusters[0].append(item)
-            #     #     clusters.pop(-1)
-            #     else:
-            #         clusters[-1].append([data.index(point), point])
-            #     in_cluster = True
-            # elif i > 1:
-            #     if data[i-1] not in [0, float('inf')]:
-            #         in_cluster = True
-            # else:
-            #     in_cluster = False
-
 
         in_cluster = False
         for ang in sorted(ranges_mapped.keys()):
@@ -94,16 +81,42 @@ class FiniteStateMachineNode(Node):
                 min_range = avg[1]
                 angle = avg[0]
 
-        # self.angle = angle - 360 if angle > 180 else angle
-        # if self.angle == 0:
-        #     self.angle = 1
         self.range = min_range
         self.angle = angle
         self.cluster_pos = self.pol2cart(min_range, angle)
-        print("min_range, angle, cluster_pos", min_range, angle, self.cluster_pos)
+        # print("min_range, angle, cluster_pos", min_range, angle, self.cluster_pos)
 
-    def run_loop(self):
+        if self.range > 1.5: # if nearest cluster average range is farther than 2 meters
+            self.behaviour_mode = 'drive_square' # drive square mode
+        else:
+            self.behaviour_mode = 'person_follower' # a person/cluster nearby; person follower mode
+            self.loop = 0 # reset loop count 
 
+    def run_drive_square(self):
+        msg = Twist()
+        if self.drive_mode == 0: # drive fwd
+            msg.linear.x = self.lin_vel 
+            msg.angular.z = 0.0
+        elif self.drive_mode == 1: # turn
+            msg.linear.x = 0.0 
+            msg.angular.z = self.ang_vel
+        else: # self.drive_mode == 2 means stopped
+            msg.linear.x = 0.0 
+            msg.angular.z = 0.0
+
+        self.vel_pub.publish(msg)
+
+        self.loop += 1
+        # if self.loop >= self.loops_to_drive * 8:
+        #     msg = Twist()
+        #     self.vel_pub.publish(msg)
+        #     rclpy.shutdown()
+        # el
+
+        if (self.loop % self.loops_to_drive) == self.loops_to_drive - 1:
+            self.drive_mode = (self.drive_mode + 1) % 2
+
+    def run_person_follower(self):
         msg = Marker()
         msg.type = Marker.SPHERE
         msg.action = Marker.ADD
@@ -126,16 +139,20 @@ class FiniteStateMachineNode(Node):
         self.publisher.publish(msg)
 
         msg = Twist()
-
         if self.angle != 0.0:   
             msg.linear.x = (1.5 * (self.range - 0.5)/abs(self.range - 0.5) * (self.range-0.5)**2)/(abs(self.angle)**0.5)
         else:
             msg.linear.x = (1.5 * (self.range - 0.5)/abs(self.range - 0.5) * (self.range-0.5)**2)
-
         msg.angular.z = (0.015*self.angle)
-
         self.vel_pub.publish(msg)
 
+    def run_loop(self):
+        if self.behaviour_mode == 'drive_square':
+            self.run_drive_square()
+        elif self.behaviour_mode == 'person_follower':
+            self.run_person_follower()
+
+        print("self.loop, self.drive_mode", self.loop, self.drive_mode)
 
 
 def main(args=None):

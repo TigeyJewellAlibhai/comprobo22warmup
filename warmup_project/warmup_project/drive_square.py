@@ -36,7 +36,6 @@ class DriveSquareNode(Node):
             rclpy.shutdown()
 
         elif (self.loop % self.loops_to_drive) == self.loops_to_drive - 1:
-            # self.loop = 0
             self.drive_mode = (self.drive_mode + 1) % 2
 
 def main(args=None):

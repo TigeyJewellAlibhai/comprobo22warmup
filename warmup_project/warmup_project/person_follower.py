@@ -34,27 +34,6 @@ class PersonFollowerNode(Node):
             ranges_mapped[angles_translate[i]] = data[i]
         # print("ranges_mapped", ranges_mapped)
 
-
-
-        # in_cluster = False
-        # for i,point in enumerate(data):
-            # if point not in [0, float('inf')]:
-            # if not in_cluster or (i > 0 and abs(data[i-1] - point) > 0.3):
-            #         clusters.append([[data.index(point), point]])
-            #     # elif i == 360:
-            #     #     for item in clusters[-1]:
-            #     #         clusters[0].append(item)
-            #     #     clusters.pop(-1)
-            #     else:
-            #         clusters[-1].append([data.index(point), point])
-            #     in_cluster = True
-            # elif i > 1:
-            #     if data[i-1] not in [0, float('inf')]:
-            #         in_cluster = True
-            # else:
-            #     in_cluster = False
-
-
         in_cluster = False
         for ang in sorted(ranges_mapped.keys()):
             if ranges_mapped[ang] not in [0, float('inf')]: # if is valid range value
@@ -94,9 +73,6 @@ class PersonFollowerNode(Node):
                 min_range = avg[1]
                 angle = avg[0]
 
-        # self.angle = angle - 360 if angle > 180 else angle
-        # if self.angle == 0:
-        #     self.angle = 1
         self.range = min_range
         self.angle = angle
         self.cluster_pos = self.pol2cart(min_range, angle)
