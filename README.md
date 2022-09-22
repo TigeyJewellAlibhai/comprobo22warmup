@@ -11,11 +11,16 @@ The most difficult part of this behaviour was tuning the turn angle to 90 degree
 
 In the future we could use odometry information to improve the accuracy of driving in a square, instead of using timers. 
 
+https://user-images.githubusercontent.com/29106192/191837378-69ef7d04-ae40-484f-b9b4-a8ddceded370.mp4
+
+
+
 ## Wall Follow Behaviour
 
 The goal of this behaviour was to get the robot to 'follow' a wall by detecting it and driving parallel to it. This can best be done using the LIDAR sensor.
 
-We thought of several possible ways to do this, but we settled for one of the easier options involving detecting a wall on the right side of the robot. The robot would then scan angles 10 degrees behind and in front of its right side (270 degrees). If the 10 degrees in front were on average closer, it was oriented more towards the wall, and would steer left (away from the wall). If the 10 degrees behind the robot were on average closer, the robot was pointed away from the wall, and would steer right (towards the wall). The steering was proportional to the difference between the distance to the wall behind and in front. This worked surprisingly well on straight walls for such a simple algorithm. Here is a diagram of how the code works: ![wallfollower](https://user-images.githubusercontent.com/29106192/191832612-06ef5bb3-13d7-4de1-8462-3675219ba036.png)
+We thought of several possible ways to do this, but we settled for one of the easier options involving detecting a wall on the right side of the robot. The robot would then scan angles 10 degrees behind and in front of its right side (270 degrees). If the 10 degrees in front were on average closer, it was oriented more towards the wall, and would steer left (away from the wall). If the 10 degrees behind the robot were on average closer, the robot was pointed away from the wall, and would steer right (towards the wall). The steering was proportional to the difference between the distance to the wall behind and in front. This worked surprisingly well on straight walls for such a simple algorithm. Here is a diagram of how the code works: ![wallfollower](https://user-images.githubusercontent.com/29106192/191841130-88a24569-18f9-42d5-9a4f-5793b2c9f281.png)
+
 
 
 We used a real neato (instead of gazebo) for testing this node, and the room where we initially tested it had black baseboards. The lidar could not detect the walls (presumably from the high light absorption of the black walls) so we had to test out in the hallway with lighter color walls. The neato follows the wall at whatever distance away that it originally becomes parallel to the wall.
@@ -49,3 +54,19 @@ A more advanced approach would be to use potential fields rather than focusing o
 https://user-images.githubusercontent.com/29106192/191826920-a50fa3b7-b4da-47bb-90eb-8f372418b024.mp4
 
 
+## Finite State Machine
+
+For our finite state machine, we needed to incorporate 2 or more behaviours into a single node that could then decide which behaviour to execute based on sensor input. We decided to combine the person follower and drive square behaviour. It was designed to drive in a square until it detected an object within 1.5m, and then follow that object (hopefully a person) until it moved out of range. Here is a diagram: ![FSM](https://user-images.githubusercontent.com/29106192/191839123-77131553-4c21-4681-bf26-a27408c78207.png)
+
+
+This was accomplished by having the node subscribe to the scan topic and determine if there was a cluster of points within 1.5m. The main loop would then run either the person following loop or the drive square loop until the state changed as dictated by the get_scan() method. This worked relatively well, except when the drive square behaviour drove the neato too close to a wall, which it then identified as a person. This could be improved by having some relative motion detection so the neato doesn't follow static objects.
+
+In the open, the code worked well. Here is a video. 
+
+https://user-images.githubusercontent.com/29106192/191837069-48e1fd44-fff1-4f88-bff7-38873a4d2979.mp4
+
+
+## Key Takeaways
+
+1. Real life is very different from Gazebo. Even after some of our programs such as person follower worked well in Gazebo, they didn't work nearly as well in real life, and most took lots of tuning to get right. This is mostly because of the noisy LIDAR data we got, and the imperfect geometries of the objects we were tracking. In addition, very dark colors would not be picked up well by the LIDAR and this made it tough to follow people with dark pants, or dark walls. The only real solution to this is to test often on a real life robot, and be ready to implement data filtering and tune parameters differently.
+2. Visualization is a great way to debug. The vast amount of data coming from sensors and the fast tick rate of ROS make it hard to see what's going on from the terminal. Using Rviz helped us to understand why our person follower wasn't working, and allowed us to see what the robot thought was the direction of the cluster. This also helped us tune parameters.
