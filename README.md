@@ -15,7 +15,8 @@ In the future we could use odometry information to improve the accuracy of drivi
 
 The goal of this behaviour was to get the robot to 'follow' a wall by detecting it and driving parallel to it. This can best be done using the LIDAR sensor.
 
-We thought of several possible ways to do this, but we settled for one of the easier options involving detecting a wall on the right side of the robot. The robot would then scan angles 10 degrees behind and in front of its right side (270 degrees). If the 10 degrees in front were on average closer, it was oriented more towards the wall, and would steer left (away from the wall). If the 10 degrees behind the robot were on average closer, the robot was pointed away from the wall, and would steer right (towards the wall). The steering was proportional to the difference between the distance to the wall behind and in front. This worked surprisingly well on straight walls for such a simple algorithm.
+We thought of several possible ways to do this, but we settled for one of the easier options involving detecting a wall on the right side of the robot. The robot would then scan angles 10 degrees behind and in front of its right side (270 degrees). If the 10 degrees in front were on average closer, it was oriented more towards the wall, and would steer left (away from the wall). If the 10 degrees behind the robot were on average closer, the robot was pointed away from the wall, and would steer right (towards the wall). The steering was proportional to the difference between the distance to the wall behind and in front. This worked surprisingly well on straight walls for such a simple algorithm. Here is a diagram of how the code works: ![wallfollower](https://user-images.githubusercontent.com/29106192/191832612-06ef5bb3-13d7-4de1-8462-3675219ba036.png)
+
 
 We used a real neato (instead of gazebo) for testing this node, and the room where we initially tested it had black baseboards. The lidar could not detect the walls (presumably from the high light absorption of the black walls) so we had to test out in the hallway with lighter color walls. The neato follows the wall at whatever distance away that it originally becomes parallel to the wall.
 
@@ -29,7 +30,11 @@ The clustering algorithm iterates from -180 to 180 degrees, looking at the diffe
 
 To drive, the angular velocity component uses a linear multiplier on the difference between the heading of the "person" and the heading of the neato currently. For linear speed, again we mutliply the distance between the person and the neato, but also divide by the square root of the difference in heading to ensure the neato doesn't zoom off in the wrong direction. We started by simulating in gazebo, then made changes to the code and calibrated coefficients while running on a real neato. There was data noise in the real world to account for, and the neato could see a whiteboard more clearly than our feet. It successfully follows us accross the room  through tables and chairs, but would get stuck at walls. 
 
-In the future there would be potential to use smarter algorithms for making sense of points it sees, and we could try filtering on only moving points or keeping track of where the "person" previously was in the odom frame.
+In the future there would be potential to use smarter algorithms for making sense of points it sees, and we could try filtering on only moving points or keeping track of where the "person" previously was in the odom frame. Here is a video of the person follower working:
+
+https://user-images.githubusercontent.com/29106192/191827891-a9f6af85-0b5f-4afc-80e9-bf9808a8fe20.mp4
+
+
 
 ## Object Avoidance
 
@@ -39,4 +44,8 @@ The approach we took was to have the neato find clusters just like in the person
 
 We tested this code mainly in gazebo and it successfully weaves through 4 obstacles of cylinders and cubes. Some possible failure modes of this algorithm include too closely spaced objects, and scenarios when the neato must recognize and avoid more than one object at a time. 
 
-A more advanced approach would be to use potential fields rather than focusing on single obstacles, which would help correct some of our current failure modes.
+A more advanced approach would be to use potential fields rather than focusing on single obstacles, which would help correct some of our current failure modes. Here is a video of our obstacle avoid working:
+
+https://user-images.githubusercontent.com/29106192/191826920-a50fa3b7-b4da-47bb-90eb-8f372418b024.mp4
+
+
