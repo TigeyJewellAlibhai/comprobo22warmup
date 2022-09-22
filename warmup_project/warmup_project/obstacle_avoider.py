@@ -6,6 +6,7 @@ from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose, Point, Quaternion
 import numpy as np
+import math
 
 class ObstacleAvoiderNode(Node):
 
@@ -16,15 +17,14 @@ class ObstacleAvoiderNode(Node):
         self.data = 0
         self.size = []
         self.angle = 0.1
-
-        
+        self.range = 0
 
         self.timer = self.create_timer(timer_period, self.run_loop)
         self.create_subscription(LaserScan, 'stable_scan', self.get_scan, 10)
         self.create_subscription(Odometry, 'odom', self.get_odom, 10)
         self.vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
 
-        self.goal_angle = self.angle
+        self.current_angle = self.angle
     
     def euler_from_quaternion(self, quaternion):
         """
@@ -77,23 +77,76 @@ class ObstacleAvoiderNode(Node):
         return clusters, avgs
 
                 
+    def cluster2(self, data):
+        clusters = []
+        angles_translate = [i for i in range(0,181)] + [i for i in range(-179,0,1)]
+        ranges_mapped = {}
+        for i in range(0,360):
+            ranges_mapped[angles_translate[i]] = data[i]
+        in_cluster = False
+        for ang in sorted(ranges_mapped.keys()):
+            if ranges_mapped[ang] not in [0, float('inf')]: # if is valid range value
+
+                # too far from current cluster, create new cluser
+                if not in_cluster or (ang > -179 and abs(ranges_mapped[ang-1]- ranges_mapped[ang]) > 0.3): 
+                    clusters.append([[ang, ranges_mapped[ang]]])
+                else: # if close enough to current cluster, add to cluster
+                    clusters[-1].append([ang, ranges_mapped[ang]])
+                in_cluster = True
+
+            elif ang > -179: # stay in cluster even if there's one outlier
+                if ranges_mapped[ang-1] not in [0, float('inf')]:
+                    in_cluster = True
+
+            else: # not valid range
+                in_cluster = False
+        
+        avgs = []
+        for cluster in clusters:
+            if len(cluster) > 5 and len(cluster) < 90:
+                avgs.append([np.mean(x) for x in zip(*cluster)])
+        return clusters, avgs
+
+    def pol2cart(self, rho, phi):
+        x = rho * np.cos(math.radians(phi))
+        y = rho * np.sin(math.radians(phi))
+        return (x, y)
+                
     def get_scan(self, scan_msg):
         data = scan_msg.ranges
         clusters, avgs = self.cluster2(data)
-        
-        #print(self.angle)
+        min_range = 100
+        angle = 0
+        for avg in avgs:
+            if -50 < avg[0] < 50 and avg[1] < min_range:
+                min_range = avg[1]
+                angle = avg[0]
+
+        # self.angle = angle - 360 if angle > 180 else angle
+        # if self.angle == 0:
+        #     self.angle = 1
+        self.range = min_range
+        self.angle = angle
+        self.cluster_pos = self.pol2cart(min_range, angle)
+        #print("min_range, angle, cluster_pos", min_range, angle, self.cluster_pos)
 
     def get_odom(self, odom_msg):
         odom_pos = odom_msg.pose.pose.position
         odom_ori = self.euler_from_quaternion(odom_msg.pose.pose.orientation)[2]
-        print(odom_ori)
+        self.current_angle = odom_ori - 2*math.pi if odom_ori > math.pi else odom_ori
 
     def run_loop(self):
         msg = Twist()
-        msg.linear.x = 4.0/abs(self.angle)
-        msg.angular.z = (0.01*self.angle)
+        # If no obstacle in range, revert to odometry heading
+        if self.range > 1:
+            msg.angular.z = ((-self.current_angle/abs(self.current_angle))*0.8*(self.current_angle**2))
+        # Else avoid the obstacle
+        else:
+            msg.angular.z = (10/-self.angle)
+        msg.linear.x = 0.3
+        print(self.current_angle)
 
-        #self.vel_pub.publish(msg)
+        self.vel_pub.publish(msg)
 
 
 
