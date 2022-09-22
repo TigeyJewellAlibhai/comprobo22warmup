@@ -15,8 +15,9 @@ class SendMessageNode(Node):
         self.publisher = self.create_publisher(Marker, 'my_marker', 10)
 
     def run_loop(self):
-        #header = Header(stamp = self.get_clock().now().to_msg(), frame_id='odom')
-        #point = Point(x=2.0, y=4.0, z=1.2)
+        """ 
+        Creates a marker at (1.0, 2.0)
+        """
         msg = Marker()
         msg.type = Marker.SPHERE
         msg.action = Marker.ADD
@@ -36,9 +37,6 @@ class SendMessageNode(Node):
         msg.pose.position.y = 2.0
         msg.pose.position.z = 0.0
         msg.pose.orientation.w = 1.0
-
-
-
         self.publisher.publish(msg)
 
 def main(args=None):

@@ -14,20 +14,17 @@ class FiniteStateMachineNode(Node):
     def __init__(self):
         super().__init__('finite_state_machine_node')
         timer_period = 0.1
-        self.velocity = 0.1
-        self.data = 0
-        self.size = []
-        self.angle = 0.1
-        self.range = 0.1
-        self.cluster_pos = [0.0, 0.0]
+        self.angle = 0.1 # the angle of the cluster/person to follow
+        self.range = 0.1 # the range of the cluster/person to follow
+        self.cluster_pos = [0.0, 0.0] # default cluster position
 
-        self.loops_to_drive = 20
-        self.loop = 0
-        self.lin_vel = 0.3
-        self.ang_vel = 0.8
-        self.drive_mode = 0
+        self.loops_to_drive = 20 # the number of loops to drive forward 1 meter or to turn 90 degrees
+        self.loop = 0 # the current loop count (each loop being 0.1 seconds from timer_period)
+        self.lin_vel = 0.3 # the linear vel to drive fwd at
+        self.ang_vel = 0.8 # the angular vel to turn at
+        self.drive_mode = 0 # drive mode. 0 = fwd, 1 = turn, 2 = stop
 
-        self.behaviour_mode = 'drive_square'
+        self.behaviour_mode = 'drive_square' # describes which behaviour mode to follow, used to switch between behaviours
 
         self.timer = self.create_timer(timer_period, self.run_loop)
         self.create_subscription(LaserScan, 'stable_scan', self.get_scan, 10)
@@ -35,12 +32,20 @@ class FiniteStateMachineNode(Node):
         self.publisher = self.create_publisher(Marker, 'my_marker', 10)
     
     def cluster2(self, data):
+        """ 
+        Clusters lidar scan data. 
+        Returns the average range and average angle of each cluster identified. 
+        """
+
         clusters = []
+
+        # creates list of angles from 0 to 180 then -179 back down to -1 to map onto data instead of 0 to 360
         angles_translate = [i for i in range(0,181)] + [i for i in range(-179,0,1)]
         ranges_mapped = {}
+
+        # map data from 0 to 360 angles to -180 to 180 angles instead
         for i in range(0,360):
             ranges_mapped[angles_translate[i]] = data[i]
-        # print("ranges_mapped", ranges_mapped)
 
         in_cluster = False
         for ang in sorted(ranges_mapped.keys()):
@@ -60,18 +65,27 @@ class FiniteStateMachineNode(Node):
             else: # not valid range
                 in_cluster = False
         
+        # filter clusters on number of points and return the average angle and range
         avgs = []
-        for cluster in clusters:
+        for cluster in clusters: 
             if len(cluster) > 5 and len(cluster) < 90:
                 avgs.append([np.mean(x) for x in zip(*cluster)])
         return clusters, avgs
 
     def pol2cart(self, rho, phi):
+        """ 
+        Convert polar coordinate to cartesian. 
+        Accepts rho (range in meters), phi (angle in degrees).
+        Outputs (x, y) distance in meters.
+        """
         x = rho * np.cos(math.radians(phi))
         y = rho * np.sin(math.radians(phi))
         return (x, y)
                 
     def get_scan(self, scan_msg):
+        """ 
+        Gets the position, angle, and range of the nearest obstacle.
+        """
         data = scan_msg.ranges
         clusters, avgs = self.cluster2(data)
         min_range = 100
@@ -93,6 +107,9 @@ class FiniteStateMachineNode(Node):
             self.loop = 0 # reset loop count 
 
     def run_drive_square(self):
+        """ 
+        Drives robot in a square using a count of the number of times run_loop has been called. 
+        """
         msg = Twist()
         if self.drive_mode == 0: # drive fwd
             msg.linear.x = self.lin_vel 
@@ -107,16 +124,17 @@ class FiniteStateMachineNode(Node):
         self.vel_pub.publish(msg)
 
         self.loop += 1
-        # if self.loop >= self.loops_to_drive * 8:
-        #     msg = Twist()
-        #     self.vel_pub.publish(msg)
-        #     rclpy.shutdown()
-        # el
 
         if (self.loop % self.loops_to_drive) == self.loops_to_drive - 1:
             self.drive_mode = (self.drive_mode + 1) % 2
 
     def run_person_follower(self):
+        """
+        Drives the robot toward the nearest cluster/person, and
+        publishes a marker on top of this cluster to visualize it.
+        """
+
+        # create marker to show the position of the cluster that the neato is driving towards
         msg = Marker()
         msg.type = Marker.SPHERE
         msg.action = Marker.ADD
@@ -132,27 +150,31 @@ class FiniteStateMachineNode(Node):
         msg.scale.x = 0.1
         msg.scale.y = 0.1
         msg.scale.z = 0.1
-        msg.pose.position.x = self.cluster_pos[0]-0.05
+        msg.pose.position.x = self.cluster_pos[0]-0.05 # offset due to lidar being backset from center of neato
         msg.pose.position.y = self.cluster_pos[1]
         msg.pose.position.z = 0.0
         msg.pose.orientation.w = 1.0
         self.publisher.publish(msg)
 
         msg = Twist()
-        if self.angle != 0.0:   
+        if self.angle != 0.0: # if robot is facing straight on to the target, adjust linear velocity
             msg.linear.x = (1.5 * (self.range - 0.5)/abs(self.range - 0.5) * (self.range-0.5)**2)/(abs(self.angle)**0.5)
-        else:
+        else: # if robot is at an angle to the target, adjust linear velocity
             msg.linear.x = (1.5 * (self.range - 0.5)/abs(self.range - 0.5) * (self.range-0.5)**2)
-        msg.angular.z = (0.015*self.angle)
+        
+        msg.angular.z = (0.015*self.angle) # set angular velocity based on angle difference from the target
         self.vel_pub.publish(msg)
 
     def run_loop(self):
+        """
+        Switch between drive_square and person_follower mode based on "behaviour_mode".
+        """
         if self.behaviour_mode == 'drive_square':
             self.run_drive_square()
         elif self.behaviour_mode == 'person_follower':
             self.run_person_follower()
 
-        print("self.loop, self.drive_mode", self.loop, self.drive_mode)
+        # print("self.loop, self.drive_mode", self.loop, self.drive_mode)
 
 
 def main(args=None):

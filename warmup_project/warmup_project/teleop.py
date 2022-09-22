@@ -13,10 +13,12 @@ class TeleopNode(Node):
     def __init__(self):
         super().__init__('send_message_node')
         self.settings = termios.tcgetattr(sys.stdin)
-        self.key = None
+        self.key = None # the last key that was pressed
         timer_period = 0.1
         self.timer = self.create_timer(timer_period, self.run_loop)
         self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
+
+        # key mapping of what key corresponds to what linear and angular velocity settings
         self.key_mapping = {'q' : (1.0,0.0,0.0,0.0,0.0,1.0), 
                             'w' : (1.0,0.0,0.0,0.0,0.0,0.0), 
                             'e' : (1.0,0.0,0.0,0.0,0.0,-1.0), 
@@ -28,7 +30,6 @@ class TeleopNode(Node):
                             'c' : (-1.0,0.0,0.0,0.0,0.0,1.0) 
                             }
         self.vel_coeff = 0.5
-        #self.prev_key = self.key
 
     def getKey(self):
         tty.setraw(sys.stdin.fileno())
@@ -38,6 +39,10 @@ class TeleopNode(Node):
 
 
     def run_loop(self):
+        """
+        Drives the robot based on key presses.
+        """
+        
         self.getKey()
         print(self.key)
         msg = Twist()
@@ -51,9 +56,6 @@ class TeleopNode(Node):
             self.publisher.publish(msg)
             rclpy.shutdown()
 
-        # else:
-        #if self.key not in self.key_mapping or self.key == self.prev_key:
-        #    self.key = 's'
         speeds = self.key_mapping[self.key]
         msg.linear.x = speeds[0] * self.vel_coeff 
         msg.linear.y = speeds[1] * self.vel_coeff 
@@ -63,13 +65,6 @@ class TeleopNode(Node):
         msg.angular.z = speeds[5] * self.vel_coeff 
         
         self.publisher.publish(msg)
-
-# settings = termios.tcgetattr(sys.stdin)
-# key = None
-# while key != '\x03':
-#     key = getKey()
-#     print(key)
-
 
 def main(args=None):
     rclpy.init(args=args)
