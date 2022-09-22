@@ -132,7 +132,7 @@ class FiniteStateMachineNode(Node):
         msg.scale.x = 0.1
         msg.scale.y = 0.1
         msg.scale.z = 0.1
-        msg.pose.position.x = self.cluster_pos[0]
+        msg.pose.position.x = self.cluster_pos[0]-0.05
         msg.pose.position.y = self.cluster_pos[1]
         msg.pose.position.z = 0.0
         msg.pose.orientation.w = 1.0

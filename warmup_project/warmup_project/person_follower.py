@@ -79,7 +79,6 @@ class PersonFollowerNode(Node):
         print("min_range, angle, cluster_pos", min_range, angle, self.cluster_pos)
 
     def run_loop(self):
-
         msg = Marker()
         msg.type = Marker.SPHERE
         msg.action = Marker.ADD
@@ -95,23 +94,19 @@ class PersonFollowerNode(Node):
         msg.scale.x = 0.1
         msg.scale.y = 0.1
         msg.scale.z = 0.1
-        msg.pose.position.x = self.cluster_pos[0]
+        msg.pose.position.x = self.cluster_pos[0]-0.05
         msg.pose.position.y = self.cluster_pos[1]
         msg.pose.position.z = 0.0
         msg.pose.orientation.w = 1.0
         self.publisher.publish(msg)
 
         msg = Twist()
-
         if self.angle != 0.0:   
             msg.linear.x = (1.5 * (self.range - 0.5)/abs(self.range - 0.5) * (self.range-0.5)**2)/(abs(self.angle)**0.5)
         else:
             msg.linear.x = (1.5 * (self.range - 0.5)/abs(self.range - 0.5) * (self.range-0.5)**2)
-
         msg.angular.z = (0.015*self.angle)
-
         self.vel_pub.publish(msg)
-
 
 
 def main(args=None):
